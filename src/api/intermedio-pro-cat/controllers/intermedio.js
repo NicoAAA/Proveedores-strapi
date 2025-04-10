@@ -17,22 +17,23 @@ module.exports = {
       const productCategoryCount = {};
 
       interRecords.results.forEach(record => {
-        const producto = record.idProducto;
+        const producto = record.idProducto; // Obtenemos el producto relacionado.
         if (!producto) return; // Si no hay producto relacionado, lo omitimos.
 
-        const productId = producto.id;
+        const productId = producto.id; // Obtenemos el id del producto.
+
         // Dado que fk_idCategoria es many-to-many, esperamos un array de categorías.
-        const categorias = record.fk_idCategoria || [];
-        const cantidad = Array.isArray(categorias) ? categorias.length : 0;
+        const categorias = record.fk_idCategoria || []; // Si no hay categorías, usamos un array vacío.
+        const cantidad = Array.isArray(categorias) ? categorias.length : 0; // Contamos la cantidad de categorías.
 
         // Si el producto ya fue registrado, acumulamos la cantidad.
         if (productCategoryCount[productId]) {
-          productCategoryCount[productId].count += cantidad;
+          productCategoryCount[productId].count += cantidad; // Acumulamos la cantidad.
         } else {
           productCategoryCount[productId] = {
             product: producto,
             count: cantidad,
-          };
+          }; // Registramos el producto con la cantidad de categorías.
         }
       });
 
