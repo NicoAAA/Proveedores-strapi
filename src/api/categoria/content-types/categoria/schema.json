@@ -17,6 +17,12 @@
     "descripcion": {
       "type": "text",
       "required": true
+    },
+    "productos": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::producto.producto",
+      "inversedBy": "categorias"
     }
   }
 }

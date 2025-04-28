@@ -391,39 +391,10 @@ export interface ApiCategoriaCategoria extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     nombre: Schema.Attribute.String & Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiIntermedioProCatIntermedioProCat
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'intermedio_pro_cats';
-  info: {
-    displayName: 'Intermedio_PRO_CAT';
-    pluralName: 'intermedio-pro-cats';
-    singularName: 'intermedio-pro-cat';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    fk_idCategoria: Schema.Attribute.Relation<
+    productos: Schema.Attribute.Relation<
       'manyToMany',
-      'api::categoria.categoria'
+      'api::producto.producto'
     >;
-    idProducto: Schema.Attribute.Relation<'oneToOne', 'api::producto.producto'>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::intermedio-pro-cat.intermedio-pro-cat'
-    > &
-      Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -434,6 +405,7 @@ export interface ApiIntermedioProCatIntermedioProCat
 export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
   collectionName: 'productos';
   info: {
+    description: '';
     displayName: 'Producto';
     pluralName: 'productos';
     singularName: 'producto';
@@ -442,14 +414,19 @@ export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    categorias: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::categoria.categoria'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     descripcion: Schema.Attribute.Text & Schema.Attribute.Required;
     fk_idProveedor: Schema.Attribute.Relation<
-      'oneToOne',
+      'manyToOne',
       'api::proveedor.proveedor'
-    >;
+    > &
+      Schema.Attribute.Required;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -457,7 +434,14 @@ export interface ApiProductoProducto extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     nombre: Schema.Attribute.String & Schema.Attribute.Required;
-    precio: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    precio: Schema.Attribute.Decimal &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMax<
+        {
+          min: 1;
+        },
+        number
+      >;
     publishedAt: Schema.Attribute.DateTime;
     stock: Schema.Attribute.BigInteger & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
@@ -1008,7 +992,6 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::categoria.categoria': ApiCategoriaCategoria;
-      'api::intermedio-pro-cat.intermedio-pro-cat': ApiIntermedioProCatIntermedioProCat;
       'api::producto.producto': ApiProductoProducto;
       'api::proveedor.proveedor': ApiProveedorProveedor;
       'plugin::content-releases.release': PluginContentReleasesRelease;

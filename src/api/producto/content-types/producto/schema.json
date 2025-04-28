@@ -4,7 +4,8 @@
   "info": {
     "singularName": "producto",
     "pluralName": "productos",
-    "displayName": "Producto"
+    "displayName": "Producto",
+    "description": ""
   },
   "options": {
     "draftAndPublish": true
@@ -20,7 +21,8 @@
     },
     "precio": {
       "type": "decimal",
-      "required": true
+      "required": true,
+      "min": 1
     },
     "stock": {
       "type": "biginteger",
@@ -28,8 +30,15 @@
     },
     "fk_idProveedor": {
       "type": "relation",
-      "relation": "oneToOne",
+      "required": true,
+      "relation": "manyToOne",
       "target": "api::proveedor.proveedor"
+    },
+    "categorias": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::categoria.categoria",
+      "mappedBy": "productos"
     }
   }
 }
