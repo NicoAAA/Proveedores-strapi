@@ -7,78 +7,82 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::producto.producto', ({ strapi }) => ({
 
+  async crearConRelaciones(ctx) {
+    console.log('🚀 crearConRelaciones invocado');
+    const {
+      nombre,
+      descripcion,
+      precio,
+      stock,
+      proveedorNombre,
+      categoriasNombres
+    } = ctx.request.body.data || {};
 
-  async registrarProducto(ctx) {
+    console.log('📥 Body recibido:', ctx.request.body.data);
+
+    // Aceptar categorías como string o array
+    const categorias = typeof categoriasNombres === 'string'
+      ? [categoriasNombres]
+      : Array.isArray(categoriasNombres)
+      ? categoriasNombres
+      : [];
+
+    // Validar campos mínimos
+    if (!nombre || !descripcion || precio == null || stock == null || !proveedorNombre || categorias.length === 0) {
+      console.log('❌ Datos faltantes o incorrectos');
+      return ctx.throw(400, 'Faltan datos obligatorios o categorías');
+    }
+
     try {
-      const { data } = ctx.request.body || {};
-      const errores = [];
-
-      if (!data.nombre)      errores.push('Falta nombre');
-      if (!data.descripcion) errores.push('Falta descripción');
-      if (!data.precio)      errores.push('Falta precio');
-      if (!data.stock)       errores.push('Falta stock');
-      if (!data.proveedorDocumentId) {
-        errores.push('Falta proveedorDocumentId');
-      }
-      if (
-        !Array.isArray(data.categoriaDocumentIds) ||
-        !data.categoriaDocumentIds.length
-      ) {
-        errores.push('Falta al menos una categoríaDocumentIds');
-      }
-      if (errores.length) {
-        return ctx.badRequest(`Campos inválidos: ${errores.join(', ')}`);
-      }
-
-      // Traduce proveedorDocumentId → fk_idProveedor
-      const prov = await strapi.db
-        .query('api::proveedor.proveedor')
-        .findOne({ where: { documentId: data.proveedorDocumentId } });
-      if (!prov) {
-        return ctx.badRequest(`Proveedor "${data.proveedorDocumentId}" no existe`);
-      }
-
-      // Traduce y valida categorías
-      const catDocIds = data.categoriaDocumentIds;
-      const cats = await strapi.db
-        .query('api::categoria.categoria')
-        .findMany({
-          where: { documentId: { $in: catDocIds } },
-          select: ['id','documentId'],
+      // 1) Proveedor
+      let proveedor = await strapi.db.query('api::proveedor.proveedor').findOne({ where: { nombre: proveedorNombre } });
+      if (!proveedor) {
+        console.log(`➕ Creando proveedor: ${proveedorNombre}`);
+        proveedor = await strapi.entityService.create('api::proveedor.proveedor', {
+          data: { nombre: proveedorNombre },
         });
-      const encontrados = cats.map(c => c.documentId);
-      const faltantes  = catDocIds.filter(id => !encontrados.includes(id));
-      if (faltantes.length) {
-        return ctx.badRequest(
-          `Categorías no encontradas: ${faltantes.join(', ')}`
-        );
       }
 
-      // Aquí ya tenemos IDs puras, dejamos que el hook valide
-      const nuevo = await strapi.entityService.create('api::producto.producto', {
+      // 2) Categorías
+      const categoriasRelacion = [];
+      for (const catNom of categorias) {
+        let categoria = await strapi.db.query('api::categoria.categoria').findOne({ where: { nombre: catNom } });
+        if (!categoria) {
+          console.log(`➕ Creando categoría: ${catNom}`);
+          categoria = await strapi.entityService.create('api::categoria.categoria', {
+            data: { nombre: catNom },
+          });
+        }
+        categoriasRelacion.push({ id: categoria.id });
+      }
+
+      // 3) Crear producto usando connect para la relación manyToMany
+      const nuevoProducto = await strapi.entityService.create('api::producto.producto', {
         data: {
-          nombre: data.nombre,
-          descripcion: data.descripcion,
-          precio: data.precio,
-          stock: data.stock,
-          // relación manyToOne:
-          fk_idProveedor: prov.id,
-          // relación manyToMany: 
+          nombre,
+          descripcion,
+          precio,
+          stock,
+          fk_idProveedor: proveedor.id,
           categorias: {
-            connect: cats.map(c => c.id)
+            connect: categoriasRelacion,
           },
-          // opcionalmente, publícalo de una vez:
-          publishedAt: new Date().toISOString()
         },
-        // para devolver el objeto ya poblado
-        populate: ['fk_idProveedor','categorias'],
       });
-      return ctx.created({ data: nuevo });
+
+      console.log('🎉 Producto creado:', nuevoProducto.id);
+      ctx.status = 201;
+      ctx.body = {
+        message: 'Producto creado con relaciones exitosamente',
+        producto: nuevoProducto,
+      };
+
     } catch (err) {
-      console.error('❌ registrarProducto fatal error:', err);
-      return ctx.internalServerError('Error inesperado al registrar producto');
+      console.error('❌ Error en crearConRelaciones:', err);
+      ctx.throw(500, 'Error interno al crear el producto');
     }
   },
+  
 
   // I. Listar todos los productos de un proveedor específico.
   async listaProductosDeProveedorEspecifico(ctx) {

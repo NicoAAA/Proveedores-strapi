@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  strapi:
+    build: .
+    # Host:Contenedor
+    ports:
+      - '1337:1337'
+    env_file:
+      - .env
+    # Montamos código para poder iterar (si quieres hot-reload usas develop)
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14
+    restart: always
+    ports:
+      - '5432:5432'          # opcional: conecta con cliente externo
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+
+    

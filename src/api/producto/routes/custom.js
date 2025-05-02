@@ -51,8 +51,8 @@ module.exports = {
     },
     {
       method: 'POST',
-      path: '/productos/RegistrarProducto',
-      handler: 'producto.registrarProducto',
+      path: '/productos/crear-con-relaciones',
+      handler: 'producto.crearConRelaciones',
       config: {
         policies: [],
         middlewares: [],
